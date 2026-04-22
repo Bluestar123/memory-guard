@@ -5,6 +5,7 @@ const VERSION_FILES = [
   "package.json",
   "package-lock.json",
   "src-tauri/Cargo.toml",
+  "src-tauri/Cargo.lock",
   "src-tauri/tauri.conf.json"
 ];
 
@@ -91,6 +92,21 @@ function updateCargoToml(version) {
   writeFileSync(filePath, updated);
 }
 
+function updateCargoLock(version) {
+  const filePath = "src-tauri/Cargo.lock";
+  const contents = readFileSync(filePath, "utf8");
+  const updated = contents.replace(
+    /(\[\[package\]\]\nname = "memory-guard"\nversion = ")[^"]+(")/,
+    `$1${version}$2`
+  );
+
+  if (updated === contents) {
+    throw new Error('Could not find package version for "memory-guard" in src-tauri/Cargo.lock.');
+  }
+
+  writeFileSync(filePath, updated);
+}
+
 function updateTauriConfig(version) {
   const filePath = "src-tauri/tauri.conf.json";
   const parsed = JSON.parse(readFileSync(filePath, "utf8"));
@@ -114,6 +130,7 @@ function syncVersions(version) {
   updatePackageJson(version);
   updatePackageLock(version);
   updateCargoToml(version);
+  updateCargoLock(version);
   updateTauriConfig(version);
 }
 

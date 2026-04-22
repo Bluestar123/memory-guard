@@ -1,6 +1,7 @@
 use std::{
     fs,
     path::PathBuf,
+    process::Command,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -100,7 +101,6 @@ struct TerminateProcessResult {
 #[derive(serde::Serialize)]
 struct NotificationPermissionResult {
     permission: String,
-    test_notification_sent: bool,
     error: Option<String>,
 }
 
@@ -334,30 +334,34 @@ fn is_valid_alert_settings(settings: &AlertSettings) -> bool {
 #[tauri::command]
 fn request_notification_permission(app_handle: tauri::AppHandle) -> NotificationPermissionResult {
     let permission = ensure_notification_permission(&app_handle);
-    let mut result = NotificationPermissionResult {
+    NotificationPermissionResult {
         permission: permission.to_string(),
-        test_notification_sent: false,
         error: None,
-    };
+    }
+}
 
-    if matches!(permission, PermissionState::Granted) {
-        match app_handle
-            .notification()
-            .builder()
-            .title("Memory Guard notifications are enabled")
-            .body("When memory exceeds your threshold, open the panel to review details.")
-            .show()
-        {
-            Ok(()) => {
-                result.test_notification_sent = true;
-            }
-            Err(error) => {
-                result.error = Some(format!("Could not show the test notification: {error}"));
-            }
-        }
+#[tauri::command]
+fn open_notification_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.notifications")
+            .status()
+            .map_err(|error| format!("Could not open System Settings: {error}"))
+            .and_then(|status| {
+                if status.success() {
+                    Ok(())
+                } else {
+                    Err("Could not open System Settings.".to_string())
+                }
+            })?;
+        Ok(())
     }
 
-    result
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("Opening notification settings is only supported on macOS.".to_string())
+    }
 }
 
 #[tauri::command]
@@ -836,6 +840,7 @@ pub fn run() {
             notification_permission_state,
             notification_delivery_target,
             request_notification_permission,
+            open_notification_settings,
             is_panel_open,
             top_apps,
             terminate_app

@@ -321,66 +321,17 @@ h3 {
   white-space: nowrap;
 }
 
-.switch-control {
-  align-items: center;
+.state-label {
+  border: 1px solid #9bb6ad;
+  border-radius: 8px;
   color: #275f63;
-  cursor: pointer;
   display: inline-flex;
-  gap: 10px;
-  min-height: 40px;
-  user-select: none;
-}
-
-.switch-label {
-  font-weight: 800;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  min-width: max-content;
+  padding: 7px 10px;
   white-space: nowrap;
-}
-
-.switch-control input {
-  height: 1px;
-  opacity: 0;
-  position: absolute;
-  width: 1px;
-}
-
-.switch-track {
-  background: #d7e0dd;
-  border: 1px solid #9bb6ad;
-  border-radius: 999px;
-  display: inline-flex;
-  height: 32px;
-  padding: 3px;
-  transition:
-    background 160ms ease,
-    border-color 160ms ease;
-  width: 58px;
-}
-
-.switch-thumb {
-  background: #ffffff;
-  border: 1px solid #9bb6ad;
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgb(31 41 51 / 18%);
-  height: 24px;
-  transition:
-    border-color 160ms ease,
-    transform 160ms ease;
-  width: 24px;
-}
-
-.switch-control input:checked + .switch-track {
-  background: #275f63;
-  border-color: #275f63;
-}
-
-.switch-control input:checked + .switch-track .switch-thumb {
-  border-color: #275f63;
-  transform: translateX(26px);
-}
-
-.switch-control input:focus-visible + .switch-track {
-  outline: 3px solid rgb(39 95 99 / 28%);
-  outline-offset: 3px;
 }
 
 .feedback-panel {

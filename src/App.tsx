@@ -47,13 +47,6 @@ type DraftSettings = {
 };
 
 type TabId = "overview" | "settings" | "feedback";
-type NotificationPermission = "granted" | "denied" | "prompt" | "prompt-with-rationale";
-type NotificationDeliveryTarget = "app" | "terminal";
-type NotificationPermissionResult = {
-  permission: NotificationPermission;
-  test_notification_sent: boolean;
-  error: string | null;
-};
 
 const initialMemory: MemorySummary = {
   percentage: 0,
@@ -170,16 +163,6 @@ const copy = {
     scanError: "无法扫描应用",
     emptyApps: "暂时没有应用数据",
     saved: "设置已保存",
-    notifications: "系统通知",
-    enableNotifications: "启用通知",
-    testNotifications: "发送测试通知",
-    testNotificationSent: "测试通知已发送。如果没有看到横幅，请检查系统设置里的通知样式或勿扰模式。",
-    notificationCannotDisable: "关闭通知需要在系统设置 > 通知 > Memory Guard 中操作。",
-    notificationGranted: "通知已启用。",
-    notificationDenied: "通知被 macOS 拒绝，请在系统设置的通知里允许 Memory Guard。",
-    notificationPrompt: "尚未启用通知，超过阈值时可能无法及时提醒你打开面板查看详情。",
-    notificationDevTarget:
-      "当前是开发模式，macOS 会把测试通知归到 Terminal。若没弹窗，请在系统设置 > 通知里允许 Terminal 横幅；打包后再允许 Memory Guard。",
     chromeSubtitle: "包含多个标签页和页面渲染进程",
     chromeRendererTitle: "Chrome 渲染进程",
     chromeRendererCount: "个渲染进程",
@@ -231,19 +214,6 @@ const copy = {
     scanError: "Could not scan apps",
     emptyApps: "No app data yet",
     saved: "Settings saved",
-    notifications: "System notifications",
-    enableNotifications: "Enable notifications",
-    testNotifications: "Send test notification",
-    testNotificationSent:
-      "Test notification sent. If no banner appears, check the notification style or Focus mode in System Settings.",
-    notificationCannotDisable:
-      "Turn off notifications in System Settings > Notifications > Memory Guard.",
-    notificationGranted: "Notifications are enabled.",
-    notificationDenied: "macOS denied notifications. Allow Memory Guard in System Settings > Notifications.",
-    notificationPrompt:
-      "Notifications are not enabled yet, so you may miss alerts that tell you to open the panel for details.",
-    notificationDevTarget:
-      "This is dev mode, so macOS attributes test notifications to Terminal. If no banner appears, allow Terminal banners in System Settings > Notifications; packaged builds use Memory Guard.",
     chromeSubtitle: "Includes multiple tabs and page renderer processes",
     chromeRendererTitle: "Chrome renderer processes",
     chromeRendererCount: "renderer processes",
@@ -270,11 +240,6 @@ function App() {
   const [terminationStatus, setTerminationStatus] = useState("");
   const [availableUpdate, setAvailableUpdate] = useState<Update | null>(null);
   const [updateStatus, setUpdateStatus] = useState(copy.zh.manualUpdates);
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission>("prompt");
-  const [notificationDeliveryTarget, setNotificationDeliveryTarget] =
-    useState<NotificationDeliveryTarget>("app");
-
   const t = copy[activeSettings.language];
   const isWaiting = memory.updated_at_ms === 0;
   const isHigh = !isWaiting && memory.percentage >= activeSettings.threshold_percent;
@@ -325,30 +290,6 @@ function App() {
       .catch(() => {
         if (isMounted) {
           setPanelOpen(false);
-        }
-      });
-
-    invoke<NotificationPermission>("notification_permission_state")
-      .then((permission) => {
-        if (isMounted) {
-          setNotificationPermission(permission);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setNotificationPermission("denied");
-        }
-      });
-
-    invoke<NotificationDeliveryTarget>("notification_delivery_target")
-      .then((target) => {
-        if (isMounted) {
-          setNotificationDeliveryTarget(target);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setNotificationDeliveryTarget("app");
         }
       });
 
@@ -458,48 +399,6 @@ function App() {
       ...current,
       [field]: normalizeIntegerInput(value)
     }));
-  }
-
-  function notificationStatusText(permission: NotificationPermission): string {
-    const devNote = notificationDeliveryTarget === "terminal" ? ` ${t.notificationDevTarget}` : "";
-
-    if (permission === "granted") {
-      return `${t.notificationGranted}${devNote}`;
-    }
-
-    if (permission === "denied") {
-      return `${t.notificationDenied}${devNote}`;
-    }
-
-    return `${t.notificationPrompt}${devNote}`;
-  }
-
-  async function enableNotifications() {
-    try {
-      const result =
-        await invoke<NotificationPermissionResult>("request_notification_permission");
-      setNotificationPermission(result.permission);
-
-      if (result.error) {
-        setSettingsStatus(result.error);
-      } else if (result.test_notification_sent) {
-        setSettingsStatus(t.testNotificationSent);
-      } else {
-        setSettingsStatus(notificationStatusText(result.permission));
-      }
-    } catch (error) {
-      setSettingsStatus(error instanceof Error ? error.message : String(error));
-    }
-  }
-
-  async function toggleNotifications() {
-    if (notificationPermission === "granted") {
-      setSettingsStatus(t.notificationCannotDisable);
-      await enableNotifications();
-      return;
-    }
-
-    await enableNotifications();
   }
 
   async function saveSettings() {
@@ -750,29 +649,6 @@ function App() {
             {t.save}
           </button>
           {settingsStatus ? <p className="status-text">{settingsStatus}</p> : null}
-
-          <div className="update-row">
-            <div>
-              <strong>{t.notifications}</strong>
-              <p className="status-text">{notificationStatusText(notificationPermission)}</p>
-            </div>
-            <div className="update-actions">
-              <label className="switch-control">
-                <span className="switch-label">
-                  {notificationPermission === "granted" ? t.testNotifications : t.enableNotifications}
-                </span>
-                <input
-                  aria-label={t.notifications}
-                  checked={notificationPermission === "granted"}
-                  onChange={toggleNotifications}
-                  type="checkbox"
-                />
-                <span className="switch-track" aria-hidden="true">
-                  <span className="switch-thumb" />
-                </span>
-              </label>
-            </div>
-          </div>
 
           <div className="update-row">
             <div>
