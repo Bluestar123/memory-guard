@@ -1,6 +1,6 @@
 [package]
 name = "memory-guard"
-version = "0.1.0"
+version = "0.1.1"
 description = "A lightweight macOS menu bar memory monitor."
 authors = ["Memory Guard"]
 edition = "2021"
