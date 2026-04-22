@@ -151,6 +151,11 @@ const copy = {
     manualUpdates: "更新需要手动确认",
     noUpdate: "当前已是最新版本",
     checking: "正在检查更新",
+    updateAvailable: "发现新版本",
+    updateCheckFailed: "检查更新失败",
+    installingUpdate: "正在安装更新",
+    downloadingUpdate: "正在下载安装包",
+    updateInstalledRestarting: "更新已安装，正在重启",
     emailTitle: "欢迎反馈使用体验",
     emailHelp: "目前只支持邮箱反馈。请描述你遇到的问题、内存占用截图或希望优化的应用名称。",
     emailSubject: "Memory Guard 反馈",
@@ -207,6 +212,11 @@ const copy = {
     manualUpdates: "Updates require confirmation",
     noUpdate: "Memory Guard is up to date",
     checking: "Checking for updates",
+    updateAvailable: "Update available",
+    updateCheckFailed: "Could not check for updates",
+    installingUpdate: "Installing update",
+    downloadingUpdate: "Downloading update",
+    updateInstalledRestarting: "Update installed. Restarting",
     emailTitle: "Send feedback",
     emailHelp: "Email feedback is supported for now. Include what happened, screenshots, or apps you want improved.",
     emailSubject: "Memory Guard feedback",
@@ -545,9 +555,10 @@ function App() {
       }
 
       setAvailableUpdate(update);
-      setUpdateStatus(`Version ${update.version} is available`);
+      setUpdateStatus(`${t.updateAvailable}: ${update.version}`);
     } catch (error) {
-      setUpdateStatus(error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      setUpdateStatus(`${t.updateCheckFailed}: ${message}`);
     }
   }
 
@@ -564,14 +575,14 @@ function App() {
     }
 
     try {
-      setUpdateStatus(`Installing version ${availableUpdate.version}`);
+      setUpdateStatus(`${t.installingUpdate}: ${availableUpdate.version}`);
       await availableUpdate.downloadAndInstall((event) => {
         if (event.event === "Started") {
-          setUpdateStatus("Downloading update");
+          setUpdateStatus(t.downloadingUpdate);
         }
 
         if (event.event === "Finished") {
-          setUpdateStatus("Update installed. Restarting");
+          setUpdateStatus(t.updateInstalledRestarting);
         }
       });
       await relaunch();

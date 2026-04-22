@@ -2,5 +2,6 @@
 /dist
 /src-tauri/target
 /src-tauri/gen
+/.tauri
 /.DS_Store
 *.log
