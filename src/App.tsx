@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
 import { listen } from "@tauri-apps/api/event";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
@@ -140,6 +141,7 @@ const copy = {
     language: "语言",
     save: "保存设置",
     updates: "检查更新",
+    currentVersion: "当前版本",
     install: "安装更新并重启",
     manualUpdates: "更新需要手动确认",
     noUpdate: "当前已是最新版本",
@@ -191,6 +193,7 @@ const copy = {
     language: "Language",
     save: "Save settings",
     updates: "Check for updates",
+    currentVersion: "Current version",
     install: "Install update and restart",
     manualUpdates: "Updates require confirmation",
     noUpdate: "Memory Guard is up to date",
@@ -240,6 +243,7 @@ function App() {
   const [terminationStatus, setTerminationStatus] = useState("");
   const [availableUpdate, setAvailableUpdate] = useState<Update | null>(null);
   const [updateStatus, setUpdateStatus] = useState(copy.zh.manualUpdates);
+  const [currentVersion, setCurrentVersion] = useState("--");
   const t = copy[activeSettings.language];
   const isWaiting = memory.updated_at_ms === 0;
   const isHigh = !isWaiting && memory.percentage >= activeSettings.threshold_percent;
@@ -290,6 +294,18 @@ function App() {
       .catch(() => {
         if (isMounted) {
           setPanelOpen(false);
+        }
+      });
+
+    getVersion()
+      .then((version) => {
+        if (isMounted) {
+          setCurrentVersion(version);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCurrentVersion("--");
         }
       });
 
@@ -653,6 +669,9 @@ function App() {
           <div className="update-row">
             <div>
               <strong>{t.updates}</strong>
+              <p className="status-text">
+                {t.currentVersion}: {currentVersion}
+              </p>
               <p className="status-text">{updateStatus}</p>
             </div>
             <div className="update-actions">

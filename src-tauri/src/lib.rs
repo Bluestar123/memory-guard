@@ -812,7 +812,7 @@ pub fn run() {
         .manage(AppState::new())
         .setup(|app| {
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
             configure_panel_window(app);
             let tray = configure_tray(app)?;
