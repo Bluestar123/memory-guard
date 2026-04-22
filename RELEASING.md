@@ -14,24 +14,25 @@ The local signing files were generated under `.tauri/`, which is gitignored.
    - `npm run release`
      This bumps the current patch version, for example `0.1.0 -> 0.1.1`.
    - `npm run release:push`
-     This bumps the current patch version, creates the release commit and tag, then pushes both automatically.
+     This bumps the current patch version, creates the release commit and tag, then pushes both automatically. If the push fails, the script rolls back the local version bump, commit, and tag.
    - `npm run release -- -v 0.2.0`
      This releases an explicit version.
    - `npm run release:push -- -v 0.2.0`
-     This releases an explicit version and pushes it immediately.
-2. The script updates:
+     This releases an explicit version and pushes it immediately. If the push fails, the script rolls back the local version bump, commit, and tag.
+2. Before releasing, add the user-facing or developer-facing changes to [`CHANGELOG.md`](CHANGELOG.md) under `Unreleased`.
+3. The script updates:
    - `package.json`
    - `package-lock.json`
    - `src-tauri/Cargo.toml`
    - `src-tauri/tauri.conf.json`
-3. The script creates:
+4. The script creates:
    - a commit: `release vX.Y.Z`
    - a tag: `vX.Y.Z`
-4. If you used `npm run release`, push both:
+5. If you used `npm run release`, push both:
    - `git push origin main`
    - `git push origin vX.Y.Z`
-5. GitHub Actions runs `.github/workflows/release.yml`.
-6. The workflow publishes a GitHub Release with:
+6. GitHub Actions runs `.github/workflows/release.yml`.
+7. The workflow publishes a GitHub Release with:
    - `Memory Guard.app`
    - `Memory Guard.dmg`
    - updater artifacts such as `latest.json` and signed archives

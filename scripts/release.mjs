@@ -98,6 +98,18 @@ function updateTauriConfig(version) {
   writeFileSync(filePath, `${JSON.stringify(parsed, null, 2)}\n`);
 }
 
+function snapshotVersionFiles() {
+  return new Map(
+    VERSION_FILES.map((filePath) => [filePath, readFileSync(filePath, "utf8")])
+  );
+}
+
+function restoreVersionFiles(snapshot) {
+  for (const [filePath, contents] of snapshot.entries()) {
+    writeFileSync(filePath, contents);
+  }
+}
+
 function syncVersions(version) {
   updatePackageJson(version);
   updatePackageLock(version);
@@ -122,8 +134,7 @@ function readCurrentBranch() {
 }
 
 function pushRelease(branchName, tagName) {
-  execGit(["push", "origin", branchName]);
-  execGit(["push", "origin", tagName]);
+  execGit(["push", "--atomic", "origin", branchName, tagName]);
 }
 
 function readCurrentVersion() {
@@ -133,6 +144,19 @@ function readCurrentVersion() {
   }
   parseSemver(parsed.version);
   return parsed.version;
+}
+
+function rollbackRelease({ snapshot, commitCreated, tagCreated }) {
+  if (tagCreated) {
+    execGit(["tag", "-d", tagCreated]);
+  }
+
+  if (commitCreated) {
+    execGit(["reset", "--hard", "HEAD~1"]);
+    return;
+  }
+
+  restoreVersionFiles(snapshot);
 }
 
 function main() {
@@ -152,23 +176,40 @@ function main() {
     throw new Error(`Tag ${tagName} already exists.`);
   }
 
-  syncVersions(nextVersion);
-  stageVersionFiles();
-  createReleaseCommit(nextVersion);
-  createReleaseTag(nextVersion);
+  const snapshot = snapshotVersionFiles();
+  let commitCreated = false;
+  let tagCreated = "";
 
-  const branchName = readCurrentBranch();
+  try {
+    syncVersions(nextVersion);
+    stageVersionFiles();
+    createReleaseCommit(nextVersion);
+    commitCreated = true;
+    createReleaseTag(nextVersion);
+    tagCreated = tagName;
 
-  if (args.push) {
-    pushRelease(branchName, tagName);
-  }
+    const branchName = readCurrentBranch();
 
-  console.log(`Released ${tagName}`);
-  if (args.push) {
-    console.log(`Pushed ${branchName} and ${tagName}`);
-  } else {
-    console.log("Next step:");
-    console.log(`  git push origin ${branchName} && git push origin ${tagName}`);
+    if (args.push) {
+      pushRelease(branchName, tagName);
+    }
+
+    console.log(`Released ${tagName}`);
+    if (args.push) {
+      console.log(`Pushed ${branchName} and ${tagName}`);
+    } else {
+      console.log("Next step:");
+      console.log(`  git push origin ${branchName} && git push origin ${tagName}`);
+    }
+  } catch (error) {
+    if (args.push) {
+      rollbackRelease({ snapshot, commitCreated, tagCreated });
+      console.error(`Release failed. Rolled back local version changes for ${tagName}.`);
+    } else if (!commitCreated) {
+      restoreVersionFiles(snapshot);
+    }
+
+    throw error;
   }
 }
 
