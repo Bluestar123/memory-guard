@@ -28,6 +28,12 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Clean previous build outputs
+        run: rm -rf src-tauri/target
+
+      - name: Verify release version
+        run: npm run check:release-version -- --expected "${GITHUB_REF_NAME#v}"
+
       - name: Build and publish release
         uses: tauri-apps/tauri-action@v0
         env:

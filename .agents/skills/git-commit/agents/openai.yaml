@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Commit"
+  short_description: "Draft and run concise git commits"
+  default_prompt: "Use $git-commit to summarize my current git diff into a short commit message and commit it when the scope is clean."
